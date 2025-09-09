@@ -1,0 +1,25 @@
+{
+  "name": "mysql-mcp",
+  "version": "1.0.0",
+  "description": "基于 MCP 协议实现的 MySQL 数据库管理工具",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "test": "node test-local.js",
+    "test:connection": "node test-local.js connection",
+    "test:sample": "node test-local.js sample",
+    "test:find": "node test-local.js find",
+    "test:stats": "node test-local.js stats"
+  },
+  "keywords": [],
+  "author": "lijie",
+  "license": "MIT",
+  "dependencies": {
+    "@model-context-protocol/server": "^0.0.10",
+    "dotenv": "^16.4.5",
+    "mysql2": "^3.9.7",
+    "winston": "^3.11.0"
+  }
+}
