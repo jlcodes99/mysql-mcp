@@ -21,7 +21,7 @@ const logger = winston.createLogger({
     ),
     transports: [
         new winston.transports.Console({
-            stderrLevels: ['error', 'warn', 'info', 'verbose', 'debug', 'silly']
+            stderrLevels: ['error', 'warn'] // 只有error和warn输出到stderr
         })
     ]
 });
