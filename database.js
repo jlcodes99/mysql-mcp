@@ -227,37 +227,54 @@ export class MySQLDatabase {
             logger.info(`执行SQL (${this.config.securityMode}): ${sql.slice(0, 200)}...`);
         }
 
-        let connection;
-        try {
-            connection = await this.getConnection();
-            const [results] = await connection.execute(sql, params);
-
-            // 对于查询操作，获取结果
-            if (/^(SELECT|WITH|SHOW|DESCRIBE|EXPLAIN)/i.test(sql.trim())) {
-                let queryResults = Array.isArray(results) ? results : [results];
+        // 实现重试逻辑
+        let lastError;
+        for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
+            let connection;
+            try {
+                connection = await this.getConnection();
                 
-                // 限制返回结果数量
-                if (queryResults.length > this.config.maxResultRows) {
-                    logger.warn(`查询结果超过限制(${this.config.maxResultRows})，截断返回`);
-                    queryResults = queryResults.slice(0, this.config.maxResultRows);
-                }
+                // 设置查询超时
+                await connection.execute(`SET SESSION wait_timeout = ${this.config.queryTimeout}`);
+                
+                const [results] = await connection.execute(sql, params);
 
-                logger.info(`查询执行成功，返回 ${queryResults.length} 条记录`);
-                return queryResults;
-            } else {
-                // 对于非查询操作（INSERT、UPDATE等），返回影响的行数
-                const affectedRows = results.affectedRows || 0;
-                logger.info(`操作执行成功，影响 ${affectedRows} 行`);
-                return [{ affected_rows: affectedRows, status: 'success' }];
-            }
-        } catch (error) {
-            logger.error(`SQL执行失败: ${error.message}`);
-            throw error;
-        } finally {
-            if (connection) {
-                connection.release();
+                // 对于查询操作，获取结果
+                if (/^(SELECT|WITH|SHOW|DESCRIBE|EXPLAIN)/i.test(sql.trim())) {
+                    let queryResults = Array.isArray(results) ? results : [results];
+                    
+                    // 限制返回结果数量
+                    if (queryResults.length > this.config.maxResultRows) {
+                        logger.warn(`查询结果超过限制(${this.config.maxResultRows})，截断返回`);
+                        queryResults = queryResults.slice(0, this.config.maxResultRows);
+                    }
+
+                    logger.info(`查询执行成功，返回 ${queryResults.length} 条记录`);
+                    return queryResults;
+                } else {
+                    // 对于非查询操作（INSERT、UPDATE等），返回影响的行数
+                    const affectedRows = results.affectedRows || 0;
+                    logger.info(`操作执行成功，影响 ${affectedRows} 行`);
+                    return [{ affected_rows: affectedRows, status: 'success' }];
+                }
+            } catch (error) {
+                lastError = error;
+                logger.warn(`SQL执行失败 (尝试 ${attempt}/${this.config.maxRetries}): ${error.message}`);
+                
+                // 如果不是最后一次尝试，等待后重试
+                if (attempt < this.config.maxRetries) {
+                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // 递增延迟
+                }
+            } finally {
+                if (connection) {
+                    connection.release();
+                }
             }
         }
+        
+        // 所有重试都失败，抛出最后一个错误
+        logger.error(`SQL执行失败，已重试 ${this.config.maxRetries} 次: ${lastError.message}`);
+        throw lastError;
     }
 
     /**
