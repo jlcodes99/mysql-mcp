@@ -28,13 +28,7 @@ npm install
 
 ### 3. 配置环境变量
 
-复制配置示例文件并填写您的数据库信息：
-
-```bash
-cp env.example .env
-```
-
-编辑 `.env` 文件，填写您的数据库连接信息：
+在MCP配置中直接设置环境变量，或创建 `.env` 文件：
 
 ```env
 MYSQL_HOST=your_mysql_host
@@ -68,30 +62,12 @@ MYSQL_SECURITY_MODE=readonly
 }
 ```
 
-## 本地测试
+## 启动服务
 
-为了便于开发和调试，项目提供了本地测试脚本：
+启动MCP服务器：
 
-### 完整测试
 ```bash
-npm run test
-# 或
-node test-local.js
-```
-
-### 单项测试
-```bash
-npm run test:sample     # 测试样本数据查询
-npm run test:find       # 测试表名搜索
-npm run test:stats      # 测试表统计信息
-npm run test:connection # 测试数据库连接
-```
-
-### 手动单项测试
-```bash
-node test-local.js connection
-node test-local.js sample
-node test-local.js find
+npm start
 ```
 
 ## 可用工具
