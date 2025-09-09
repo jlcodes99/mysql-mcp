@@ -12,7 +12,7 @@ import { getConfigInstance, SecurityMode } from './config.js';
 
 // 配置日志 - 输出到stderr避免污染stdio通道
 const logger = winston.createLogger({
-    level: 'error', // 只记录错误，减少输出
+    level: 'info', // 支持info级别日志用于查询日志
     format: winston.format.combine(
         winston.format.timestamp(),
         winston.format.printf(({ timestamp, level, message }) => {
