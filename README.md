@@ -30,13 +30,24 @@ npm install
 
 在MCP配置中直接设置环境变量，或创建 `.env` 文件：
 
+#### 必需配置
 ```env
-MYSQL_HOST=your_mysql_host
-MYSQL_PORT=3306
-MYSQL_USERNAME=your_username
-MYSQL_PASSWORD=your_password
-MYSQL_DATABASE=your_database
-MYSQL_SECURITY_MODE=readonly
+MYSQL_HOST=your_mysql_host          # 数据库主机地址
+MYSQL_PORT=3306                     # 数据库端口
+MYSQL_USERNAME=your_username        # 数据库用户名
+MYSQL_PASSWORD=your_password        # 数据库密码
+MYSQL_DATABASE=your_database        # 数据库名称
+```
+
+#### 可选配置
+```env
+MYSQL_SECURITY_MODE=readonly        # 安全模式: readonly/limited_write/full_access
+MYSQL_ALLOWED_SCHEMAS=*             # 允许访问的数据库: * 或 逗号分隔的数据库名
+MYSQL_CONNECT_TIMEOUT=30            # 连接超时时间(秒)
+MYSQL_QUERY_TIMEOUT=60              # 查询超时时间(秒)
+MYSQL_MAX_RETRIES=3                 # 最大重试次数
+MYSQL_ENABLE_QUERY_LOG=false        # 是否启用查询日志
+MYSQL_MAX_RESULT_ROWS=1000          # 最大结果行数限制
 ```
 
 ### 4. 配置Cursor MCP
@@ -55,7 +66,13 @@ MYSQL_SECURITY_MODE=readonly
         "MYSQL_USERNAME": "your_username", 
         "MYSQL_PASSWORD": "your_password",
         "MYSQL_DATABASE": "your_database",
-        "MYSQL_SECURITY_MODE": "readonly"
+        "MYSQL_SECURITY_MODE": "readonly",
+        "MYSQL_ALLOWED_SCHEMAS": "*",
+        "MYSQL_CONNECT_TIMEOUT": "30",
+        "MYSQL_QUERY_TIMEOUT": "60",
+        "MYSQL_MAX_RETRIES": "3",
+        "MYSQL_ENABLE_QUERY_LOG": "false",
+        "MYSQL_MAX_RESULT_ROWS": "1000"
       }
     }
   }
@@ -85,19 +102,38 @@ npm start
 ### 搜索功能
 - `find_table` - 按关键词模糊搜索表名
 
-## 安全模式
+## 配置说明
 
-### readonly（只读模式）
+### 环境变量详解
+
+| 变量名 | 必需 | 默认值 | 说明 |
+|--------|------|--------|------|
+| `MYSQL_HOST` | ✅ | - | 数据库主机地址 |
+| `MYSQL_PORT` | ✅ | - | 数据库端口号 |
+| `MYSQL_USERNAME` | ✅ | - | 数据库用户名 |
+| `MYSQL_PASSWORD` | ✅ | - | 数据库密码 |
+| `MYSQL_DATABASE` | ✅ | - | 数据库名称 |
+| `MYSQL_SECURITY_MODE` | ❌ | `readonly` | 安全模式 |
+| `MYSQL_ALLOWED_SCHEMAS` | ❌ | `*` | 允许访问的数据库 |
+| `MYSQL_CONNECT_TIMEOUT` | ❌ | `30` | 连接超时时间(秒) |
+| `MYSQL_QUERY_TIMEOUT` | ❌ | `60` | 查询超时时间(秒) |
+| `MYSQL_MAX_RETRIES` | ❌ | `3` | 最大重试次数 |
+| `MYSQL_ENABLE_QUERY_LOG` | ❌ | `false` | 是否启用查询日志 |
+| `MYSQL_MAX_RESULT_ROWS` | ❌ | `1000` | 最大结果行数限制 |
+
+### 安全模式
+
+#### readonly（只读模式）
 - 只允许SELECT、SHOW等查询操作
 - 禁止INSERT、UPDATE、DELETE等写入操作
 - 最大结果行数限制：1000行
 
-### limited_write（限制写入模式）
+#### limited_write（限制写入模式）
 - 允许INSERT、UPDATE操作
 - 禁止DELETE、DROP等危险操作
 - 适合数据录入场景
 
-### full_access（完全访问模式）
+#### full_access（完全访问模式）
 - 允许所有SQL操作
 - ⚠️ 谨慎使用，建议仅在开发环境使用
 
