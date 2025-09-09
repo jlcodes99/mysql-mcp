@@ -224,7 +224,8 @@ export class MySQLDatabase {
 
         // 记录查询日志（如果启用）
         if (this.config.enableQueryLog) {
-            logger.info(`执行SQL (${this.config.securityMode}): ${sql.slice(0, 200)}...`);
+            const paramsInfo = params && params.length > 0 ? ` | 参数: [${params.join(', ')}]` : '';
+            logger.info(`执行SQL (${this.config.securityMode}): ${sql}${paramsInfo}`);
         }
 
         // 实现重试逻辑
