@@ -21,7 +21,7 @@ const logger = winston.createLogger({
     ),
     transports: [
         new winston.transports.Console({
-            stderrLevels: ['error', 'warn'] // 只有error和warn输出到stderr
+            stderrLevels: ['error', 'warn', 'info', 'verbose', 'debug', 'silly']
         })
     ]
 });
@@ -568,27 +568,54 @@ export class MySQLDatabase {
     }
 
     /**
-     * 按名称模糊搜索表
+     * 按名称搜索表（支持精准匹配和模糊匹配）
+     * 
+     * @param {string} keyword 搜索关键词
+     * @param {boolean} exactMatch 是否精准匹配，默认false（模糊匹配）
+     * 
+     * Author: 李杰
+     * Date: 2025/09/10
      */
-    async findTables(keyword) {
+    async findTables(keyword, exactMatch = false) {
         this.validateSecurity(['readonly', 'limited_write', 'full_access']);
         
-        const query = `
-            SELECT 
-                TABLE_NAME as table_name, 
-                TABLE_COMMENT as table_comment, 
-                TABLE_ROWS as table_rows
-            FROM information_schema.tables 
-            WHERE TABLE_SCHEMA = ? 
-            AND TABLE_NAME LIKE ?
-            ORDER BY TABLE_NAME
-        `;
+        let query;
+        let params;
         
-        const results = await this.executeQuery(query, [this.config.database, `%${keyword}%`]);
+        if (exactMatch) {
+            // 精准匹配
+            query = `
+                SELECT 
+                    TABLE_NAME as table_name, 
+                    TABLE_COMMENT as table_comment, 
+                    TABLE_ROWS as table_rows
+                FROM information_schema.tables 
+                WHERE TABLE_SCHEMA = ? 
+                AND TABLE_NAME = ?
+                ORDER BY TABLE_NAME
+            `;
+            params = [this.config.database, keyword];
+        } else {
+            // 模糊匹配
+            query = `
+                SELECT 
+                    TABLE_NAME as table_name, 
+                    TABLE_COMMENT as table_comment, 
+                    TABLE_ROWS as table_rows
+                FROM information_schema.tables 
+                WHERE TABLE_SCHEMA = ? 
+                AND TABLE_NAME LIKE ?
+                ORDER BY TABLE_NAME
+            `;
+            params = [this.config.database, `%${keyword}%`];
+        }
+        
+        const results = await this.executeQuery(query, params);
         return results.map(row => ({
             table_name: row.table_name,
             comment: row.table_comment || '',
-            row_count: row.table_rows || 0
+            row_count: row.table_rows || 0,
+            match_type: exactMatch ? 'exact' : 'fuzzy'
         }));
     }
 

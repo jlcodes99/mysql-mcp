@@ -15,7 +15,6 @@
 ### 核心工具
 - `test_connection` - 数据库连接测试
 - `get_security_info` - 安全配置信息查询
-- `list_tables` - 数据库表列表查询
 - `describe_table` - 表详细结构查询
 - `generate_table_doc` - 表文档生成
 - `generate_database_overview` - 数据库概览生成

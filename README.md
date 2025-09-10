@@ -91,7 +91,6 @@ npm start
 
 ### 基础信息
 - `get_security_info` - 查看当前安全模式和配置
-- `list_tables` - 获取数据库中所有表的列表
 - `describe_table` - 查看表的详细结构信息
 
 ### 数据查询
@@ -100,7 +99,7 @@ npm start
 - `table_stats` - 获取表的统计信息（行数、大小等）
 
 ### 搜索功能
-- `find_table` - 按关键词模糊搜索表名
+- `find_table` - 按关键词搜索表名（支持精准匹配和模糊匹配）
 
 ## 配置说明
 
@@ -139,6 +138,12 @@ npm start
 
 ## 使用示例
 
+### 查看数据库表列表
+```sql
+-- 查看当前数据库所有表
+SHOW TABLES;
+```
+
 ### 查看表结构
 ```
 请帮我查看 users 表的结构
@@ -151,13 +156,59 @@ npm start
 
 ### 搜索表名
 ```
+# 模糊搜索（默认）
 找一下包含 "user" 关键词的所有表
+
+# 精准搜索
+查找名为 "users" 的表（精准匹配）
 ```
 
 ### 执行查询
 ```
 查询一下 products 表有多少条记录
 ```
+
+## 表搜索功能详解
+
+`find_table` 工具支持两种搜索模式：
+
+### 模糊搜索（默认模式）
+```json
+{
+  "name": "find_table",
+  "arguments": {
+    "keyword": "user",
+    "exact_match": false
+  }
+}
+```
+或者简化为：
+```json
+{
+  "name": "find_table",
+  "arguments": {
+    "keyword": "user"
+  }
+}
+```
+**结果**：会查找所有包含 "user" 的表名，如：`users`、`user_roles`、`admin_users` 等
+
+### 精准搜索
+```json
+{
+  "name": "find_table",
+  "arguments": {
+    "keyword": "users",
+    "exact_match": true
+  }
+}
+```
+**结果**：只会查找名称完全匹配 "users" 的表
+
+### 使用场景
+
+- **模糊搜索**：适用于探索性查找，不确定完整表名时
+- **精准搜索**：适用于确定知道表名，需要验证表是否存在时
 
 ## 安全注意事项
 

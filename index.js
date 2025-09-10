@@ -55,14 +55,7 @@ let db = null;
  */
 server.setRequestHandler(ListResourcesRequestSchema, async () => {
     return {
-        resources: [
-            {
-                uri: 'mysql://database/tables',
-                name: '数据库表列表',
-                description: '当前数据库中所有表的列表',
-                mimeType: 'application/json'
-            }
-        ]
+        resources: []
     };
 });
 
@@ -70,32 +63,7 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
  * 读取指定资源的内容
  */
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
-    const { uri } = request.params;
-    
-    if (!db) {
-        db = getDbInstance();
-    }
-
-    try {
-        if (uri === 'mysql://database/tables') {
-            const tables = await db.getAllTables();
-            const content = JSON.stringify(tables, null, 2);
-            return {
-                contents: [
-                    {
-                        uri: uri,
-                        mimeType: 'application/json',
-                        text: content
-                    }
-                ]
-            };
-        } else {
-            throw new Error(`未知的资源URI: ${uri}`);
-        }
-    } catch (error) {
-        logger.error(`读取资源失败 ${uri}: ${error.message}`);
-        throw error;
-    }
+    throw new Error('当前不提供资源服务，请使用 execute_query 工具执行 SQL 查询');
 });
 
 /**
@@ -118,21 +86,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
                     required: ['random_string']
                 }
             },
-            {
-                name: 'list_tables',
-                description: '获取数据库中所有表的列表',
-                inputSchema: {
-                    type: 'object',
-                    properties: {
-                        database: {
-                            type: 'string',
-                            description: '数据库名称',
-                            default: 'public'
-                        }
-                    },
-                    required: []
-                }
-            },
+
             {
                 name: 'describe_table',
                 description: '获取指定表的详细结构信息',
@@ -187,13 +141,18 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
             },
             {
                 name: 'find_table',
-                description: '按名称模糊搜索表',
+                description: '按名称搜索表（支持精准搜索和模糊搜索）',
                 inputSchema: {
                     type: 'object',
                     properties: {
                         keyword: {
                             type: 'string',
                             description: '搜索关键词'
+                        },
+                        exact_match: {
+                            type: 'boolean',
+                            description: '是否精准匹配，true为精准搜索，false为模糊搜索',
+                            default: false
                         }
                     },
                     required: ['keyword']
@@ -248,19 +207,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                         {
                             type: 'text',
                             text: `MySQL数据库安全配置:\n${JSON.stringify(securityInfo, null, 2)}`
-                        }
-                    ]
-                };
-            }
-
-            case 'list_tables': {
-                const database = args.database;
-                const tables = await db.getAllTables(database);
-                return {
-                    content: [
-                        {
-                            type: 'text',
-                            text: `数据库表列表 (${tables.length} 个表):\n${JSON.stringify(tables, null, 2)}`
                         }
                     ]
                 };
@@ -322,12 +268,14 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
 
             case 'find_table': {
                 const keyword = args.keyword;
-                const tables = await db.findTables(keyword);
+                const exactMatch = args.exact_match || false;
+                const tables = await db.findTables(keyword, exactMatch);
+                const searchType = exactMatch ? '精准搜索' : '模糊搜索';
                 return {
                     content: [
                         {
                             type: 'text',
-                            text: `搜索 '${keyword}' 的结果:\n${JSON.stringify(tables, null, 2)}`
+                            text: `${searchType} '${keyword}' 的结果:\n${JSON.stringify(tables, null, 2)}`
                         }
                     ]
                 };
