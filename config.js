@@ -15,8 +15,8 @@ dotenv.config();
  * 安全模式枚举
  */
 export const SecurityMode = {
-    READONLY: 'readonly',           // 只读模式：仅允许SELECT、SHOW等查询操作
-    LIMITED_WRITE: 'limited_write', // 限制写入模式：允许INSERT、UPDATE，禁止DELETE、DROP等危险操作
+    READONLY: 'readonly',           // 只读模式：仅允许SELECT、SHOW、DESCRIBE、EXPLAIN、ANALYZE、WITH等查询操作
+    LIMITED_WRITE: 'limited_write', // 限制写入模式：只读模式的基础上额外支持INSERT、UPDATE操作，禁止DELETE、DROP、CREATE、ALTER等危险操作
     FULL_ACCESS: 'full_access'      // 完全访问模式：允许所有操作（谨慎使用）
 };
 

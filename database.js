@@ -52,13 +52,18 @@ export class SQLValidator {
         const sqlUpper = sql.toUpperCase().trim();
         const firstKeyword = this.extractFirstKeyword(sqlUpper);
 
+        // 基本语法检查：空SQL或无效第一个关键字
+        if (!sqlUpper || !firstKeyword) {
+            return false;
+        }
+
         switch (securityMode) {
             case SecurityMode.READONLY:
                 return this.validateReadonly(firstKeyword, sqlUpper);
             case SecurityMode.LIMITED_WRITE:
                 return this.validateLimitedWrite(firstKeyword, sqlUpper);
             case SecurityMode.FULL_ACCESS:
-                return true; // 完全访问模式允许所有操作
+                return this.validateFullAccess(firstKeyword, sqlUpper);
             default:
                 return false;
         }
@@ -116,25 +121,52 @@ export class SQLValidator {
 
     /**
      * 验证限制写入模式的SQL
+     * LIMITED_WRITE模式 = READONLY模式 + INSERT + UPDATE操作
      */
     static validateLimitedWrite(firstKeyword, sqlUpper) {
-        const allowedOperations = new Set([
+        // 1. 首先检查是否为只读操作，如果是则直接允许
+        if (this.READONLY_OPERATIONS.has(firstKeyword)) {
+            return this.validateReadonly(firstKeyword, sqlUpper);
+        }
+
+        // 2. 检查是否为允许的写入操作（INSERT、UPDATE）
+        if (this.WRITE_OPERATIONS.has(firstKeyword)) {
+            // 对于写入操作，只需要确保不包含危险操作的关键字模式
+            const dangerousPatterns = [
+                /\bDROP\s+/i,
+                /\bTRUNCATE\s+/i,
+                /\bDELETE\s+/i,
+                /\bCREATE\s+/i,
+                /\bALTER\s+/i,
+                /\bGRANT\s+/i,
+                /\bREVOKE\s+/i
+            ];
+
+            for (const pattern of dangerousPatterns) {
+                if (pattern.test(sqlUpper)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // 3. 其他操作一律禁止
+        return false;
+    }
+
+    /**
+     * 验证完全访问模式的SQL
+     * 完全访问模式允许所有有效的SQL操作，但仍需进行基本的语法检查
+     */
+    static validateFullAccess(firstKeyword, sqlUpper) {
+        // 检查是否为已知的SQL操作关键字
+        const allOperations = new Set([
             ...this.READONLY_OPERATIONS,
-            ...this.WRITE_OPERATIONS
+            ...this.WRITE_OPERATIONS,
+            ...this.DANGEROUS_OPERATIONS
         ]);
 
-        if (!allowedOperations.has(firstKeyword)) {
-            return false;
-        }
-
-        // 检查是否包含危险操作
-        for (const dangerous of this.DANGEROUS_OPERATIONS) {
-            if (sqlUpper.includes(dangerous)) {
-                return false;
-            }
-        }
-
-        return true;
+        return allOperations.has(firstKeyword);
     }
 
     /**
@@ -156,9 +188,18 @@ export class SQLValidator {
 
             case SecurityMode.LIMITED_WRITE:
                 if (this.DANGEROUS_OPERATIONS.has(firstKeyword)) {
-                    return `限制写入模式下禁止危险操作: ${firstKeyword}`;
+                    return `限制写入模式下禁止危险操作: ${firstKeyword}。允许的操作: 所有只读操作 + INSERT + UPDATE`;
+                } else if (!this.READONLY_OPERATIONS.has(firstKeyword) && !this.WRITE_OPERATIONS.has(firstKeyword)) {
+                    return `限制写入模式下不支持的操作: ${firstKeyword}。允许的操作: SELECT、SHOW、DESCRIBE、EXPLAIN、ANALYZE、WITH + INSERT + UPDATE`;
                 } else {
-                    return `限制写入模式下不支持的操作: ${firstKeyword}`;
+                    return `限制写入模式下操作被安全策略禁止: ${firstKeyword}`;
+                }
+
+            case SecurityMode.FULL_ACCESS:
+                if (!sqlUpper || !firstKeyword) {
+                    return '无效的SQL语句：空语句或无法识别的操作';
+                } else {
+                    return `完全访问模式下不支持的操作: ${firstKeyword}。支持的操作: SELECT、INSERT、UPDATE、DELETE、CREATE、ALTER、DROP、TRUNCATE、GRANT、REVOKE等`;
                 }
 
             default:

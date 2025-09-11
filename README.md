@@ -4,7 +4,7 @@
 
 ## 功能特点
 
-- 🔒 **多重安全模式** - 支持readonly、limited_write、full_access三种安全级别
+- 🔒 **多重安全模式** - readonly（只读）、limited_write（只读+INSERT/UPDATE）、full_access三种安全级别
 - 🚀 **高性能连接** - 基于连接池的高效数据库访问
 - 🛠️ **实用工具集** - 专注业务开发的实际需求
 - 📊 **数据统计** - 表统计信息、样本数据查看
@@ -123,14 +123,16 @@ npm start
 ### 安全模式
 
 #### readonly（只读模式）
-- 只允许SELECT、SHOW等查询操作
-- 禁止INSERT、UPDATE、DELETE等写入操作
+- 只允许SELECT、SHOW、DESCRIBE、EXPLAIN、ANALYZE、WITH等查询操作
+- 禁止INSERT、UPDATE、DELETE等所有写入和危险操作
 - 最大结果行数限制：1000行
+- 适合安全的数据查看和分析场景
 
 #### limited_write（限制写入模式）
-- 允许INSERT、UPDATE操作
-- 禁止DELETE、DROP等危险操作
-- 适合数据录入场景
+- **完全支持readonly模式的所有查询操作**（SELECT、SHOW、DESCRIBE、EXPLAIN、ANALYZE、WITH等）
+- **额外支持INSERT、UPDATE操作**
+- 禁止DELETE、DROP、CREATE、ALTER、TRUNCATE、GRANT、REVOKE等危险操作
+- 适合需要进行数据录入和更新，但要避免危险操作的场景
 
 #### full_access（完全访问模式）
 - 允许所有SQL操作
